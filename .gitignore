@@ -1,0 +1,37 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Build and Dist
+build/
+dist/
+*.egg-info/
+*.egg
+.eggs/
+*.spec
+
+# OS Files
+.DS_Store
+Thumbs.db
+
+# Virtual Environment
+venv/
+env/
+.env
+
+# Project specific
+loot/downloads/*
+!loot/downloads/.gitkeep
+loot/*.pcap
+payload.exe
+*.log
+
+# Runtime state
+monitoring/.api_token
+monitoring/stop_flags/
+
+# Exclude loot data and large binaries
+loot/
+REDOPS_SOC_App.exe
+payload.exe

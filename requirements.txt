@@ -1,0 +1,9 @@
+mac-vendor-lookup>=0.1.12,<0.2
+psutil>=5.9,<8
+rich>=13,<15
+scapy>=2.5,<3
+paramiko>=3.0,<4
+cryptography>=42,<46
+requests>=2.31,<3
+pywebview>=5,<7
+pyinstaller>=6,<7

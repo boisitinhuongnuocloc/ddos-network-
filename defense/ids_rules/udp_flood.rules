@@ -1,0 +1,73 @@
+# Snort/Suricata IDS Rules – UDP Flood Detection
+# DDoS Lab Simulation – Kịch bản 2: UDP Flood
+#
+# Sử dụng với Snort 2.x hoặc Suricata
+# Đặt vào /etc/snort/rules/ hoặc /etc/suricata/rules/
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Rule 1: UDP flood rate cao từ một source (>100 pkt/s)
+# ──────────────────────────────────────────────────────────────────────────────
+alert udp any any -> $HOME_NET any (
+    msg:"[DDoS Lab] UDP Flood - High Rate from Single Source";
+    threshold: type threshold, track by_src, count 100, seconds 1;
+    classtype:attempted-dos;
+    sid:9001001;
+    rev:1;
+    metadata:created 2024, lab ddos-simulation;
+)
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Rule 2: UDP flood tổng thể đến victim (>500 pkt/s)
+# ──────────────────────────────────────────────────────────────────────────────
+alert udp any any -> $HOME_NET any (
+    msg:"[DDoS Lab] UDP Flood - High Volume to Victim";
+    threshold: type threshold, track by_dst, count 500, seconds 1;
+    classtype:attempted-dos;
+    sid:9001002;
+    rev:1;
+)
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Rule 3: UDP đến các port không sử dụng (scanning/flooding closed ports)
+# ──────────────────────────────────────────────────────────────────────────────
+alert udp any any -> $HOME_NET !53 (
+    msg:"[DDoS Lab] UDP to Unusual Port - Possible UDP Flood";
+    threshold: type threshold, track by_src, count 50, seconds 1;
+    classtype:attempted-dos;
+    sid:9001003;
+    rev:1;
+)
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Rule 4: UDP payload lớn (>512 bytes) – bandwidth exhaustion attempt
+# ──────────────────────────────────────────────────────────────────────────────
+alert udp any any -> $HOME_NET any (
+    msg:"[DDoS Lab] UDP Large Payload - Bandwidth Exhaustion Attempt";
+    dsize:>512;
+    threshold: type threshold, track by_src, count 20, seconds 1;
+    classtype:attempted-dos;
+    sid:9001004;
+    rev:1;
+)
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Rule 5: UDP đến port DNS (53) flood – DNS amplification pattern
+# ──────────────────────────────────────────────────────────────────────────────
+alert udp any any -> $HOME_NET 53 (
+    msg:"[DDoS Lab] UDP DNS Port Flood";
+    threshold: type threshold, track by_src, count 30, seconds 1;
+    classtype:attempted-dos;
+    sid:9001005;
+    rev:1;
+)
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Rule 6: UDP scatter – gửi đến nhiều port khác nhau (port scan + flood hybrid)
+# ──────────────────────────────────────────────────────────────────────────────
+alert udp any any -> $HOME_NET 1024:65535 (
+    msg:"[DDoS Lab] UDP Port Scatter - Random Port Flood Detected";
+    threshold: type both, track by_src, count 200, seconds 2;
+    classtype:attempted-dos;
+    sid:9001006;
+    rev:1;
+)

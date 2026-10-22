@@ -1,0 +1,95 @@
+# Snort/Suricata IDS Rules – TCP SYN Flood Detection
+# DDoS Lab Simulation – Kịch bản 3: TCP SYN Flood
+#
+# Sử dụng với Snort 2.x hoặc Suricata
+# Đặt vào /etc/snort/rules/ hoặc /etc/suricata/rules/
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Rule 1: SYN flood rate cao từ một source (>50 SYN/s)
+# ──────────────────────────────────────────────────────────────────────────────
+alert tcp any any -> $HOME_NET 80 (
+    msg:"[DDoS Lab] TCP SYN Flood - High SYN Rate from Single Source to Port 80";
+    flags:S,12;
+    threshold: type threshold, track by_src, count 50, seconds 1;
+    classtype:attempted-dos;
+    sid:9002001;
+    rev:1;
+    metadata:created 2024, lab ddos-simulation;
+)
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Rule 2: SYN flood đến port 443
+# ──────────────────────────────────────────────────────────────────────────────
+alert tcp any any -> $HOME_NET 443 (
+    msg:"[DDoS Lab] TCP SYN Flood to Port 443 (HTTPS)";
+    flags:S,12;
+    threshold: type threshold, track by_src, count 50, seconds 1;
+    classtype:attempted-dos;
+    sid:9002002;
+    rev:1;
+)
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Rule 3: SYN flood tổng thể đến victim (>200 SYN/s từ nhiều source)
+# ──────────────────────────────────────────────────────────────────────────────
+alert tcp any any -> $HOME_NET any (
+    msg:"[DDoS Lab] TCP SYN Flood - High Volume to Victim";
+    flags:S,12;
+    threshold: type threshold, track by_dst, count 200, seconds 1;
+    classtype:attempted-dos;
+    sid:9002003;
+    rev:1;
+)
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Rule 4: SYN từ nhiều source IP khác nhau (distributed SYN flood)
+# ──────────────────────────────────────────────────────────────────────────────
+alert tcp any any -> $HOME_NET any (
+    msg:"[DDoS Lab] Distributed TCP SYN Flood - Multiple Sources";
+    flags:S,12;
+    threshold: type both, track by_dst, count 100, seconds 2;
+    classtype:attempted-dos;
+    sid:9002004;
+    rev:1;
+)
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Rule 5: SYN với window size bất thường (craft SYN packet)
+# ──────────────────────────────────────────────────────────────────────────────
+alert tcp any any -> $HOME_NET any (
+    msg:"[DDoS Lab] TCP SYN with Unusual Window Size - Crafted Packet";
+    flags:S,12;
+    window:!0;
+    window:65535;
+    threshold: type threshold, track by_src, count 30, seconds 1;
+    classtype:bad-unknown;
+    sid:9002005;
+    rev:1;
+)
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Rule 6: SYN không nhận được ACK (half-open pattern – stateful tracking)
+# Suricata sẽ phát hiện half-open connections accumulating
+# ──────────────────────────────────────────────────────────────────────────────
+alert tcp any any -> $HOME_NET any (
+    msg:"[DDoS Lab] TCP Half-Open Connection Accumulation - SYN Flood Pattern";
+    flags:S,12;
+    flow:stateless;
+    threshold: type threshold, track by_src, count 100, seconds 5;
+    classtype:attempted-dos;
+    sid:9002006;
+    rev:1;
+)
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Rule 7: Invalid TCP state – NEW connection không bắt đầu bằng SYN
+# ──────────────────────────────────────────────────────────────────────────────
+alert tcp any any -> $HOME_NET any (
+    msg:"[DDoS Lab] Invalid TCP State - Non-SYN in NEW connection";
+    flags:!S;
+    flow:stateless;
+    threshold: type threshold, track by_src, count 20, seconds 1;
+    classtype:bad-unknown;
+    sid:9002007;
+    rev:1;
+)

@@ -1,0 +1,179 @@
+{
+  "nodes": [
+    {
+      "id": "192.168.100.1",
+      "ip": "192.168.100.1",
+      "label": "Gateway\n192.168.100.1",
+      "group": "gateway",
+      "mac": "0c-82-47-be-15-90",
+      "vendor": "CIG SHANGHAI CO LTD",
+      "hostname": "AP [SSDP]",
+      "type": "router",
+      "ports": "53,80,443,5000",
+      "ipv6_addresses": [
+        "fe80::e82:47ff:febe:1590",
+        "fd00:db80::1"
+      ],
+      "family_v6": true,
+      "ipv6_primary": "fd00:db80::1"
+    },
+    {
+      "id": "192.168.100.16",
+      "ip": "192.168.100.16",
+      "label": "Attacker\n192.168.100.16",
+      "group": "attacker",
+      "mac": "50-bb-b5-04-6e-d2",
+      "vendor": "Local System",
+      "hostname": "Attacker Machine",
+      "type": "attacker",
+      "ipv6_addresses": [
+        "fe80::6935:1d07:b6fa:6cb1%13",
+        "fe80::7d2a:3696:39aa:ff09%17",
+        "fd00:db80::bcbc:7ea3:cf47:d947",
+        "fd00:db80::a9f4:5b0b:6c15:d604",
+        "fd00:db80::5",
+        "2405:4803:d7a3:ad0e:bcbc:7ea3:cf47:d947",
+        "2405:4803:d7a3:ad0e:95ed:a79e:30dd:77c8",
+        "2405:4803:d7a3:ad0e::5"
+      ],
+      "family_v6": true,
+      "ipv6_primary": "2405:4803:d7a3:ad0e:bcbc:7ea3:cf47:d947"
+    },
+    {
+      "id": "192.168.100.36",
+      "ip": "192.168.100.36",
+      "label": "iPhone [Apple iPhone]\n192.168.100.36",
+      "group": "victim",
+      "mac": "7a-50-df-3c-0e-dd",
+      "vendor": "Virtual MAC (Random)",
+      "hostname": "iPhone [Apple iPhone]",
+      "ports": "None",
+      "type": "pc",
+      "is_l2_local": true,
+      "ipv6_addresses": [
+        "fe80::1475:10b5:b826:2a6a"
+      ],
+      "family_v6": true,
+      "ipv6_primary": "fe80::1475:10b5:b826:2a6a"
+    },
+    {
+      "id": "192.168.100.42",
+      "ip": "192.168.100.42",
+      "label": "4851PC-1121 [mDNS]\n192.168.100.42",
+      "group": "victim",
+      "mac": "e8-f4-08-ee-03-a9",
+      "vendor": "Intel Corporate",
+      "hostname": "4851PC-1121 [mDNS]",
+      "ports": "None",
+      "type": "pc",
+      "is_l2_local": true
+    },
+    {
+      "id": "192.168.100.116",
+      "ip": "192.168.100.116",
+      "label": "Host-116\n192.168.100.116",
+      "group": "victim",
+      "mac": "26-a4-93-ca-c6-43",
+      "vendor": "Virtual MAC (Random)",
+      "hostname": "Host-116",
+      "ports": "None",
+      "type": "pc",
+      "is_l2_local": true,
+      "ipv6_addresses": [
+        "fe80::1c8a:9e44:53a4:e2e0"
+      ],
+      "family_v6": true,
+      "ipv6_primary": "fe80::1c8a:9e44:53a4:e2e0"
+    },
+    {
+      "id": "192.168.100.249",
+      "ip": "192.168.100.249",
+      "label": "Android [Android]\n192.168.100.249",
+      "group": "victim",
+      "mac": "42-20-5a-6f-5e-42",
+      "vendor": "Virtual MAC (Random)",
+      "hostname": "Android [Android]",
+      "ports": "None",
+      "type": "pc",
+      "is_l2_local": true,
+      "ipv6_addresses": [
+        "fe80::4020:5aff:fe6f:5e42"
+      ],
+      "family_v6": true,
+      "ipv6_primary": "fe80::4020:5aff:fe6f:5e42"
+    },
+    {
+      "id": "fe80::212:16ff:fecc:267b",
+      "ip": "fe80::212:16ff:fecc:267b",
+      "label": "ICP Internet Communicatio\nfe80::212:16ff:fecc:267b",
+      "group": "victim",
+      "mac": "00-12-16-CC-26-7B",
+      "vendor": "ICP Internet Communicatio",
+      "hostname": "ICP Internet Communicatio",
+      "ports": "N/A",
+      "type": "pc",
+      "family": "ipv6",
+      "ipv6_addresses": [
+        "fe80::212:16ff:fecc:267b"
+      ],
+      "ipv6_primary": "fe80::212:16ff:fecc:267b",
+      "ifindex": 17,
+      "is_l2_local": true
+    }
+  ],
+  "links": [
+    {
+      "source": "192.168.100.36",
+      "target": "192.168.100.1",
+      "color": "rgba(56, 189, 248, 0.4)"
+    },
+    {
+      "source": "192.168.100.16",
+      "target": "192.168.100.36",
+      "color": "rgba(168, 85, 247, 0.3)"
+    },
+    {
+      "source": "192.168.100.42",
+      "target": "192.168.100.1",
+      "color": "rgba(56, 189, 248, 0.4)"
+    },
+    {
+      "source": "192.168.100.16",
+      "target": "192.168.100.42",
+      "color": "rgba(168, 85, 247, 0.3)"
+    },
+    {
+      "source": "192.168.100.116",
+      "target": "192.168.100.1",
+      "color": "rgba(56, 189, 248, 0.4)"
+    },
+    {
+      "source": "192.168.100.16",
+      "target": "192.168.100.116",
+      "color": "rgba(168, 85, 247, 0.3)"
+    },
+    {
+      "source": "192.168.100.249",
+      "target": "192.168.100.1",
+      "color": "rgba(56, 189, 248, 0.4)"
+    },
+    {
+      "source": "192.168.100.16",
+      "target": "192.168.100.249",
+      "color": "rgba(168, 85, 247, 0.3)"
+    },
+    {
+      "source": "fe80::212:16ff:fecc:267b",
+      "target": "192.168.100.1",
+      "color": "rgba(56, 189, 248, 0.4)"
+    },
+    {
+      "source": "192.168.100.16",
+      "target": "fe80::212:16ff:fecc:267b",
+      "color": "rgba(168, 85, 247, 0.3)"
+    }
+  ],
+  "subnet": "192.168.100.0/24",
+  "subnet_v6": "auto",
+  "ipv6_updated": "2026-10-20 18:42:23"
+}
